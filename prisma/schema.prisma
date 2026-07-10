@@ -3,8 +3,7 @@ datasource db {
 }
 
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["postgresqlExtensions"]
+  provider = "prisma-client-js"
 }
 
 enum UserRole {
@@ -13,485 +12,136 @@ enum UserRole {
   ADMIN
 }
 
-enum ResourceType {
-  FILE
-  FLASHCARD
-  CONCEPT
-  PROJECT
-  QUIZ
-}
-
-enum ProcessingStatus {
-  PENDING
-  PROCESSING
-  COMPLETED
-  FAILED
-}
-
-enum MockInterviewStatus {
-  IN_PROGRESS
-  COMPLETED
-}
-
-enum InterviewDomain {
-  FRONTEND
-  BACKEND
-  FULLSTACK
-  SQA
-  AI
-  DATABASE
-  NETWORKING
-}
-
-// NextAuth standard User model with CareerOS additions
 model User {
   id            String    @id @default(uuid())
-  name          String?
+  fullName      String    @map("full_name")
   email         String    @unique
-  emailVerified DateTime? @map("email_verified")
   passwordHash  String?   @map("password_hash")
-  image         String?
   role          UserRole  @default(STUDENT)
+  image         String?
+  emailVerified DateTime? @map("email_verified")
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
-  deletedAt     DateTime? @map("deleted_at")
 
   // Relationships
-  accounts           Account[]
-  sessions           Session[]
-  folders            LibraryFolder[]
-  files              LibraryFile[]
-  tags               Tag[]
-  flashcards         Flashcard[]
-  quizAttempts       QuizAttempt[]
-  conversations      AIChatConversation[]
-  mockInterviews     MockInterview[]
-  resumeAnalyses     ResumeAnalysis[]
-  projectAnalyses    ProjectAnalysis[]
-  roadmaps           CareerRoadmap[]
-  analytics          LearningAnalytics[]
-  revisionPlans      RevisionPlan[]
-  auditLogs          AuditLog[]
-  graphNodes         KnowledgeGraphNode[]
-  graphEdges         KnowledgeGraphEdge[]
+  profile           UserProfile?
+  studyNotes        StudyNote[]
+  interviewSessions InterviewSession[]
+  resumes           Resume[]
+  projectReviews    ProjectReview[]
+  roadmaps          Roadmap[]
+  subscriptions     Subscription[]
+  notifications     Notification[]
 
-  @@index([email])
   @@map("users")
 }
 
-// NextAuth standard Account model
-model Account {
-  id                String  @id @default(uuid())
-  userId            String  @map("user_id")
-  type              String
-  provider          String
-  providerAccountId String  @map("provider_account_id")
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String? @db.Text
-  session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
-  @@map("accounts")
-}
-
-// NextAuth standard Session model
-model Session {
-  id           String   @id @default(uuid())
-  sessionToken String   @unique @map("session_token")
-  userId       String   @map("user_id")
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("sessions")
-}
-
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-
-  @@unique([identifier, token])
-  @@map("verification_tokens")
-}
-
-// Library Folder structure for students
-model LibraryFolder {
-  id        String    @id @default(uuid())
-  name      String
-  parentId  String?   @map("parent_id")
-  userId    String    @map("user_id")
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
-
-  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  parent        LibraryFolder?  @relation("FolderToFolder", fields: [parentId], references: [id], onDelete: Cascade)
-  subfolders    LibraryFolder[] @relation("FolderToFolder")
-  files         LibraryFile[]
-
-  @@index([userId])
-  @@index([parentId])
-  @@map("library_folders")
-}
-
-// Library File metadata and status
-model LibraryFile {
-  id               String           @id @default(uuid())
-  name             String
-  s3Key            String           @map("s3_key")
-  size             Int
-  mimeType         String           @map("mime_type")
-  folderId         String?          @map("folder_id")
-  userId           String           @map("user_id")
-  summary          String?          @db.Text
-  extractedText    String?          @map("extracted_text") @db.Text
-  language         String?
-  processingStatus ProcessingStatus @default(PENDING) @map("processing_status")
-  createdAt        DateTime         @default(now()) @map("created_at")
-  updatedAt        DateTime         @updatedAt @map("updated_at")
-  deletedAt        DateTime?        @map("deleted_at")
-
-  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  folder    LibraryFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
-  versions  FileVersion[]
-  tags      FileTag[]
-  flashcards Flashcard[]
-  quizQuestions QuizQuestion[]
-  resumes   ResumeAnalysis[]
-  projects  ProjectAnalysis[]
-
-  @@index([userId])
-  @@index([folderId])
-  @@map("library_files")
-}
-
-// Keep track of document history/revisions
-model FileVersion {
-  id            String   @id @default(uuid())
-  fileId        String   @map("file_id")
-  s3Key         String   @map("s3_key")
-  versionNumber Int      @map("version_number")
-  createdAt     DateTime @default(now()) @map("created_at")
-
-  file LibraryFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
-
-  @@index([fileId])
-  @@map("file_versions")
-}
-
-model Tag {
-  id        String    @id @default(uuid())
-  name      String
-  userId    String    @map("user_id")
-  createdAt DateTime  @default(now()) @map("created_at")
-  
-  user  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  files FileTag[]
-
-  @@unique([name, userId])
-  @@map("tags")
-}
-
-model FileTag {
-  fileId String @map("file_id")
-  tagId  String @map("tag_id")
-
-  file LibraryFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
-  tag  Tag         @relation(fields: [tagId], references: [id], onDelete: Cascade)
-
-  @@id([fileId, tagId])
-  @@map("file_tags")
-}
-
-// AI-Generated Study Flashcards (Leitner System Support)
-model Flashcard {
-  id         String    @id @default(uuid())
-  fileId     String?   @map("file_id")
-  userId     String    @map("user_id")
-  front      String    @db.Text
-  back       String    @db.Text
-  nextReview DateTime  @default(now()) @map("next_review")
-  box        Int       @default(1) // Leitner system box (1 to 5)
-  createdAt  DateTime  @default(now()) @map("created_at")
-
-  file LibraryFile? @relation(fields: [fileId], references: [id], onDelete: SetNull)
-  user User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, nextReview])
-  @@map("flashcards")
-}
-
-// AI-Generated Multiple Choice Quizzes
-model QuizQuestion {
-  id        String   @id @default(uuid())
-  fileId    String   @map("file_id")
-  question  String   @db.Text
-  options   Json     // Array of strings
-  answer    String   // Correct option text
-  createdAt DateTime @default(now()) @map("created_at")
-
-  file     LibraryFile   @relation(fields: [fileId], references: [id], onDelete: Cascade)
-  attempts QuizAttempt[]
-
-  @@index([fileId])
-  @@map("quiz_questions")
-}
-
-model QuizAttempt {
-  id             String   @id @default(uuid())
-  userId         String   @map("user_id")
-  questionId     String   @map("question_id")
-  isCorrect      Boolean  @map("is_correct")
-  answerGiven    String   @map("answer_given")
-  attemptedAt    DateTime @default(now()) @map("attempted_at")
-
-  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  question QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@map("quiz_attempts")
-}
-
-// AI Mentor Conversational Threads
-model AIChatConversation {
-  id        String   @id @default(uuid())
-  title     String
-  userId    String   @map("user_id")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages AIChatMessage[]
-
-  @@index([userId])
-  @@map("ai_chat_conversations")
-}
-
-model AIChatMessage {
-  id             String   @id @default(uuid())
-  conversationId String   @map("conversation_id")
-  sender         String   // "USER" or "AI"
-  content        String   @db.Text
-  createdAt      DateTime @default(now()) @map("created_at")
-
-  conversation AIChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-
-  @@index([conversationId])
-  @@map("ai_chat_messages")
-}
-
-// Mock Technical Interviews
-model MockInterview {
-  id                String              @id @default(uuid())
-  userId            String              @map("user_id")
-  domain            InterviewDomain
-  status            MockInterviewStatus @default(IN_PROGRESS)
-  technicalAccuracy Float?              @map("technical_accuracy") // percentage or rating 0-100
-  confidence        Float?              // score 0-100
-  communication     Float?              // score 0-100
-  answerQuality     Float?              @map("answer_quality") // score 0-100
-  timeTaken         Int?                @map("time_taken") // in seconds
-  feedback          String?             @db.Text
-  createdAt         DateTime            @default(now()) @map("created_at")
-
-  user     User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages MockInterviewMessage[]
-
-  @@index([userId])
-  @@map("mock_interviews")
-}
-
-model MockInterviewMessage {
-  id              String   @id @default(uuid())
-  mockInterviewId String   @map("mock_interview_id")
-  sender          String   // "INTERVIEWER" or "CANDIDATE"
-  content         String   @db.Text
-  score           Float?   // Evaluation score for the specific response
-  feedback        String?  @db.Text
-  createdAt       DateTime @default(now()) @map("created_at")
-
-  mockInterview MockInterview @relation(fields: [mockInterviewId], references: [id], onDelete: Cascade)
-
-  @@index([mockInterviewId])
-  @@map("mock_interview_messages")
-}
-
-// Resume Scorer and ATS Parser
-model ResumeAnalysis {
-  id                     String   @id @default(uuid())
-  userId                 String   @map("user_id")
-  fileId                 String   @map("file_id")
-  atsScore               Int      @map("ats_score") // 0 - 100
-  grammar                String?  @db.Text
-  formatting             String?  @db.Text
-  missingSkills          Json?    @map("missing_skills") // string array
-  projectQualityFeedback String?  @map("project_quality_feedback") @db.Text
-  improvementSuggestions String?  @map("improvement_suggestions") @db.Text
-  createdAt              DateTime @default(now()) @map("created_at")
-
-  user User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  file LibraryFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@map("resume_analyses")
-}
-
-// Project Architecture & Code Quality Analyzer
-model ProjectAnalysis {
-  id                       String   @id @default(uuid())
-  userId                   String   @map("user_id")
-  fileId                   String   @map("file_id") // Reference to ZIP/code files in Library
-  folderStructureScore     Int      @map("folder_structure_score")
-  architectureScore        Int      @map("architecture_score")
-  codeQualityScore         Int      @map("code_quality_score")
-  performanceScore         Int      @map("performance_score")
-  securityScore            Int      @map("security_score")
-  scalabilityScore         Int      @map("scalability_score")
-  portfolioReadinessScore  Int      @map("portfolio_readiness_score")
-  feedbackJson             Json     @map("feedback_json")
-  createdAt                DateTime @default(now()) @map("created_at")
-
-  user User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  file LibraryFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@map("project_analyses")
-}
-
-// Career Roadmap Engine
-model CareerRoadmap {
-  id             String        @id @default(uuid())
-  userId         String        @map("user_id")
-  domain         String
-  currentLevel   String        @map("current_level")
-  targetRole     String        @map("target_role")
-  estimatedWeeks Int           @map("estimated_weeks")
-  createdAt      DateTime      @default(now()) @map("created_at")
-  updatedAt      DateTime      @updatedAt @map("updated_at")
-  steps          RoadmapStep[]
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@map("career_roadmaps")
-}
-
-model RoadmapStep {
-  id          String    @id @default(uuid())
-  roadmapId   String    @map("roadmap_id")
-  title       String
-  description String    @db.Text
-  isCompleted Boolean   @default(false) @map("is_completed")
-  order       Int
-  completedAt DateTime? @map("completed_at")
-  createdAt   DateTime  @default(now()) @map("created_at")
-
-  roadmap CareerRoadmap @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
-
-  @@index([roadmapId])
-  @@map("roadmap_steps")
-}
-
-// Student Analytics tracking
-model LearningAnalytics {
-  id                       String   @id @default(uuid())
-  userId                   String   @map("user_id")
-  date                     DateTime @db.Date
-  studySeconds             Int      @default(0) @map("study_seconds")
-  studyStreak              Int      @default(0) @map("study_streak")
-  quizzesAttempted         Int      @default(0) @map("quizzes_attempted")
-  mockInterviewsCompleted  Int      @default(0) @map("mock_interviews_completed")
-  filesProcessed           Int      @default(0) @map("files_processed")
-  createdAt                DateTime @default(now()) @map("created_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, date])
-  @@map("learning_analytics")
-}
-
-// Student Spaced Repetition and Revision Planner
-model RevisionPlan {
-  id            String         @id @default(uuid())
-  userId        String         @map("user_id")
-  title         String
-  scheduledDate DateTime       @map("scheduled_date") @db.Date
-  isCompleted   Boolean        @default(false) @map("is_completed")
-  createdAt     DateTime       @default(now()) @map("created_at")
-  items         RevisionItem[]
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, scheduledDate])
-  @@map("revision_plans")
-}
-
-model RevisionItem {
-  id             String       @id @default(uuid())
-  revisionPlanId String       @map("revision_plan_id")
-  resourceType   ResourceType @map("resource_type")
-  resourceId     String       @map("resource_id") // ID pointing to LibraryFile, Flashcard, etc.
-  createdAt      DateTime     @default(now()) @map("created_at")
-
-  plan RevisionPlan @relation(fields: [revisionPlanId], references: [id], onDelete: Cascade)
-
-  @@index([revisionPlanId])
-  @@map("revision_items")
-}
-
-// Interactive Knowledge Graph representing student materials and skills
-model KnowledgeGraphNode {
-  id          String       @id @default(uuid())
-  userId      String       @map("user_id")
-  label       String
-  type        ResourceType
-  referenceId String       @map("reference_id") // Points to File, Quiz, Project etc.
-  createdAt   DateTime     @default(now()) @map("created_at")
-
-  user     User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  incoming KnowledgeGraphEdge[] @relation("TargetNode")
-  outgoing KnowledgeGraphEdge[] @relation("SourceNode")
-
-  @@unique([userId, referenceId])
-  @@map("knowledge_graph_nodes")
-}
-
-model KnowledgeGraphEdge {
-  id           String   @id @default(uuid())
-  userId       String   @map("user_id")
-  sourceNodeId String   @map("source_node_id")
-  targetNodeId String   @map("target_node_id")
-  relationType String   @map("relation_type") // e.g. "references", "prerequisite", "requires"
-  createdAt    DateTime @default(now()) @map("created_at")
-
-  user   User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  source KnowledgeGraphNode @relation("SourceNode", fields: [sourceNodeId], references: [id], onDelete: Cascade)
-  target KnowledgeGraphNode @relation("TargetNode", fields: [targetNodeId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, sourceNodeId, targetNodeId])
-  @@map("knowledge_graph_edges")
-}
-
-// Security Audit Log table
-model AuditLog {
+model UserProfile {
   id         String   @id @default(uuid())
-  userId     String?  @map("user_id")
-  action     String   // e.g. "AUTH_LOGIN", "FILE_DELETE", "ADMIN_USER_BAN"
-  entityName String   @map("entity_name") // e.g. "LibraryFile"
-  entityId   String?  @map("entity_id")
-  ipAddress  String?  @map("ip_address")
-  userAgent  String?  @map("user_agent")
+  userId     String   @unique @map("user_id")
+  university String
+  degree     String
+  semester   String
+  skills     String[]
+  github     String?
+  linkedin   String?
+  bio        String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+model StudyNote {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  title       String
+  description String?
+  fileUrl     String   @map("file_url")
+  tags        String[]
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("study_notes")
+}
+
+model InterviewSession {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  score      Int
+  feedback   String   @db.Text
+  transcript String   @db.Text
   createdAt  DateTime @default(now()) @map("created_at")
 
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
-  @@index([createdAt])
-  @@map("audit_logs")
+  @@map("interview_sessions")
+}
+
+model Resume {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  originalFile String   @map("original_file")
+  parsedText   String   @map("parsed_text") @db.Text
+  atsScore     Int      @map("ats_score")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("resumes")
+}
+
+model ProjectReview {
+  id                String   @id @default(uuid())
+  userId            String   @map("user_id")
+  repositoryUrl     String   @map("repository_url")
+  feedback          String   @db.Text
+  architectureScore Int      @map("architecture_score")
+  securityScore     Int      @map("security_score")
+  scalabilityScore  Int      @map("scalability_score")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("project_reviews")
+}
+
+model Roadmap {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  title     String
+  jsonData  Json     @map("json_data")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("roadmaps")
+}
+
+model Subscription {
+  id                   String   @id @default(uuid())
+  userId               String   @map("user_id")
+  plan                 String
+  status               String
+  stripeCustomerId     String?  @map("stripe_customer_id")
+  stripeSubscriptionId String?  @map("stripe_subscription_id")
+  createdAt            DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
 }
