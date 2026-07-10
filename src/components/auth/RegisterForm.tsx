@@ -8,6 +8,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { registerSchema, type RegisterInput } from "@/lib/validation/auth";
+import { registerAction } from "@/app/actions/auth";
 
 export function RegisterForm() {
   const router = useRouter();
@@ -35,20 +36,29 @@ export function RegisterForm() {
 
   const selectedRole = watch("role");
 
-  const onSubmit = (data: RegisterInput) => {
-    console.log("Mock registration payload:", data);
+  const onSubmit = async (data: RegisterInput) => {
     setIsLoading(true);
     setToast(null);
 
-    // Mock registration handler
-    setTimeout(() => {
-      setIsLoading(false);
-      setToast({ message: "Registration successful! Redirecting...", type: "success" });
-      
+    const result = await registerAction(data);
+
+    setIsLoading(false);
+    if (result.error) {
+      setToast({ message: result.error, type: "error" });
+    } else {
+      setToast({ 
+        message: result.message ?? "Registration successful! Verification link generated.", 
+        type: "success" 
+      });
       setTimeout(() => {
-        router.push("/dashboard");
-      }, 1200);
-    }, 1500);
+        // If we want to simulate verification link flow or direct auto-login:
+        if (result.verificationToken) {
+          router.push(`/login?verified=false&email=${encodeURIComponent(data.email)}&token=${result.verificationToken}`);
+        } else {
+          router.push("/login");
+        }
+      }, 2000);
+    }
   };
 
   return (

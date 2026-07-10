@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { forgotPasswordSchema, type ForgotPasswordInput } from "@/lib/validation/auth";
+import { forgotPasswordAction } from "@/app/actions/auth";
 
 export function ForgotPasswordForm() {
   const [isLoading, setIsLoading] = useState(false);
@@ -23,19 +24,25 @@ export function ForgotPasswordForm() {
     },
   });
 
-  const onSubmit = (data: ForgotPasswordInput) => {
-    console.log("Mock recovery request for email:", data.email);
+  const onSubmit = async (data: ForgotPasswordInput) => {
     setIsLoading(true);
     setToast(null);
 
-    // Mock forgot password handler
-    setTimeout(() => {
-      setIsLoading(false);
+    const result = await forgotPasswordAction(data);
+
+    setIsLoading(false);
+    if (result.error) {
+      setToast({ message: result.error, type: "error" });
+    } else {
+      let msg = result.message ?? "Recovery link sent successfully! Check your inbox.";
+      if (result.resetToken) {
+        msg += ` (Dev/Test link: /reset-password?token=${result.resetToken})`;
+      }
       setToast({
-        message: "Recovery link sent successfully! Check your email inbox.",
+        message: msg,
         type: "success",
       });
-    }, 1500);
+    }
   };
 
   return (

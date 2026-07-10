@@ -5,8 +5,13 @@ import Link from "next/link";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { AuthCard } from "@/components/auth/AuthCard";
 import { LoginForm } from "@/components/auth/LoginForm";
+import { signIn } from "next-auth/react";
 
 export default function LoginPage() {
+  const handleOAuthSignIn = (provider: "google" | "github") => {
+    signIn(provider, { callbackUrl: "/dashboard" });
+  };
+
   return (
     <AuthLayout>
       <AuthCard
@@ -23,10 +28,16 @@ export default function LoginPage() {
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <button className="flex items-center justify-center gap-2 py-2 border border-card-border rounded-xl text-xs font-semibold hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer bg-white/10 dark:bg-bg-dark-surface/20 text-foreground">
+          <button
+            onClick={() => handleOAuthSignIn("google")}
+            className="flex items-center justify-center gap-2 py-2 border border-card-border rounded-xl text-xs font-semibold hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer bg-white/10 dark:bg-bg-dark-surface/20 text-foreground"
+          >
             Google
           </button>
-          <button className="flex items-center justify-center gap-2 py-2 border border-card-border rounded-xl text-xs font-semibold hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer bg-white/10 dark:bg-bg-dark-surface/20 text-foreground">
+          <button
+            onClick={() => handleOAuthSignIn("github")}
+            className="flex items-center justify-center gap-2 py-2 border border-card-border rounded-xl text-xs font-semibold hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer bg-white/10 dark:bg-bg-dark-surface/20 text-foreground"
+          >
             GitHub
           </button>
         </div>
