@@ -4,8 +4,18 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { Avatar } from "@/components/ui/avatar";
 
-export function Sidebar() {
+interface SidebarProps {
+  user: {
+    fullName?: string | null;
+    name?: string | null;
+    email: string;
+    image?: string | null;
+  };
+}
+
+export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -21,6 +31,8 @@ export function Sidebar() {
     { label: "Profile", href: "/profile", icon: "👤" },
     { label: "Settings", href: "/settings", icon: "⚙️" },
   ];
+
+  const displayName = user.fullName ?? user.name ?? "User";
 
   return (
     <aside
@@ -82,13 +94,11 @@ export function Sidebar() {
 
       {/* User Section */}
       <div className="p-4 border-t border-card-border flex items-center gap-3">
-        <div className="h-9 w-9 rounded-full bg-gradient-to-br from-brand-primary/25 to-brand-secondary/25 border border-card-border flex items-center justify-center font-bold text-xs text-brand-primary">
-          JD
-        </div>
+        <Avatar name={displayName} src={user.image ?? undefined} size="sm" />
         {!isCollapsed && (
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-foreground truncate">John Doe</p>
-            <p className="text-[10px] text-zinc-500 truncate">john.doe@university.edu</p>
+            <p className="text-xs font-bold text-foreground truncate">{displayName}</p>
+            <p className="text-[10px] text-zinc-500 truncate">{user.email}</p>
           </div>
         )}
       </div>

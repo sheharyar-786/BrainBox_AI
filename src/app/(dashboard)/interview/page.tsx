@@ -3,8 +3,11 @@
 import React, { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useSession } from "next-auth/react";
 
 export default function InterviewPage() {
+  const { data: session } = useSession();
+  const displayName = session?.user?.name ?? "Candidate";
   const [sessionState, setSessionState] = useState<"setup" | "active" | "feedback">("setup");
   const [domain, setDomain] = useState("Frontend");
   const [isRecording, setIsRecording] = useState(false);
@@ -127,7 +130,7 @@ export default function InterviewPage() {
                   className={`flex max-w-[80%] flex-col p-3 rounded-2xl text-xs leading-relaxed ${msg.sender === "INTERVIEWER" ? "bg-white dark:bg-zinc-800/60 border border-card-border self-start" : "bg-gradient-to-tr from-brand-primary to-brand-secondary text-white self-end"}`}
                 >
                   <span className="font-bold text-[10px] opacity-60 mb-0.5 uppercase tracking-wide">
-                    {msg.sender === "INTERVIEWER" ? "AI Interviewer" : "John Doe (Candidate)"}
+                    {msg.sender === "INTERVIEWER" ? "AI Interviewer" : `${displayName} (Candidate)`}
                   </span>
                   <p>{msg.content}</p>
                 </div>

@@ -4,8 +4,10 @@ import React, { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { Button } from "@/components/ui/button";
+import { useSession } from "next-auth/react";
 
 export default function DashboardPage() {
+  const { data: session } = useSession();
   const [streak, setStreak] = useState(14);
   const [tasks, setTasks] = useState([
     { id: "1", text: "Revise React Hooks flashcards", done: false },
@@ -32,12 +34,14 @@ export default function DashboardPage() {
     { day: "Sun", hours: 0.8 },
   ];
 
+  const displayName = session?.user?.name ? session.user.name.split(/\s+/)[0] : "Student";
+
   return (
     <div className="flex flex-col gap-6">
       {/* Welcome Banner */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight">Welcome back, John!</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight">Welcome back, {displayName}!</h1>
           <p className="text-xs text-zinc-500">Here&apos;s your career preparation overview for today.</p>
         </div>
         <div className="flex items-center gap-2">

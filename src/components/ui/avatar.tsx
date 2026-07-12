@@ -13,11 +13,11 @@ interface AvatarProps {
 
 export function Avatar({ src, name, size = "md", isOnline, className }: AvatarProps) {
   const getInitials = (n: string) => {
-    const parts = n.trim().split(" ");
-    if (parts.length >= 2) {
+    const parts = n.trim().split(/\s+/);
+    if (parts.length >= 2 && parts[0] && parts[1]) {
       return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
     }
-    return n.substring(0, 2).toUpperCase();
+    return n.charAt(0).toUpperCase();
   };
 
   const sizes = {

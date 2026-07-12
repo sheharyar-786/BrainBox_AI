@@ -30,9 +30,23 @@ export const authConfig = {
       
       const isAuthPage = nextUrl.pathname.startsWith("/login") || 
                          nextUrl.pathname.startsWith("/register") || 
-                         nextUrl.pathname.startsWith("/forgot-password");
+                         nextUrl.pathname.startsWith("/forgot-password") ||
+                         nextUrl.pathname.startsWith("/reset-password");
                          
-      const isDashboardPage = nextUrl.pathname.startsWith("/dashboard");
+      const protectedPaths = [
+        "/dashboard",
+        "/library",
+        "/tutor",
+        "/interview",
+        "/resume",
+        "/project",
+        "/roadmap",
+        "/analytics",
+        "/profile",
+        "/settings"
+      ];
+      
+      const isProtectedPage = protectedPaths.some((path) => nextUrl.pathname.startsWith(path));
       const isAdminPage = nextUrl.pathname.startsWith("/dashboard/admin");
 
       if (isAuthPage) {
@@ -42,7 +56,7 @@ export const authConfig = {
         return true;
       }
 
-      if (isDashboardPage) {
+      if (isProtectedPage) {
         if (!isLoggedIn) {
           return false; // Redirect to login
         }

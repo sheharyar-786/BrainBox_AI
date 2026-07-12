@@ -3,8 +3,14 @@
 import React from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
+import { useSession } from "next-auth/react";
 
 export default function ProfilePage() {
+  const { data: session } = useSession();
+  const displayName = session?.user?.name ?? "John Doe";
+  const displayEmail = session?.user?.email ?? "john.doe@university.edu";
+  const displayRole = session?.user?.role ? session.user.role.charAt(0) + session.user.role.slice(1).toLowerCase() : "Student";
+
   const skills = ["React.js", "TypeScript", "Node.js", "PostgreSQL", "Prisma", "Docker", "Git", "REST APIs", "Database Normalization"];
   const certs = [
     { title: "AWS Certified Cloud Practitioner", issuer: "Amazon Web Services", date: "Jan 2026" },
@@ -22,11 +28,11 @@ export default function ProfilePage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
         {/* User main card */}
         <Card className="md:col-span-1 text-center flex flex-col items-center justify-center p-6 gap-4">
-          <Avatar name="John Doe" size="lg" isOnline className="mb-2" />
+          <Avatar name={displayName} size="lg" isOnline className="mb-2" />
           <div>
-            <h2 className="text-base font-bold text-foreground">John Doe</h2>
-            <p className="text-xs text-zinc-500">Software Engineering Student</p>
-            <p className="text-[10px] text-zinc-400">Boston University • Class of 2026</p>
+            <h2 className="text-base font-bold text-foreground">{displayName}</h2>
+            <p className="text-xs text-zinc-500">{displayRole} • Software Engineering</p>
+            <p className="text-[10px] text-zinc-400">{displayEmail}</p>
           </div>
           <div className="w-full border-t border-card-border pt-4 grid grid-cols-2 gap-2 text-center">
             <div>
