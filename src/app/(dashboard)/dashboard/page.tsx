@@ -1,29 +1,64 @@
-"use client";
-
-import React, { useState } from "react";
+import React from "react";
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
+import { prisma } from "@/lib/prisma";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ProgressBar } from "@/components/ui/progress-bar";
-import { Button } from "@/components/ui/button";
-import { useSession } from "next-auth/react";
+import { StudyStreakTracker, StreakCard } from "@/components/dashboard/StudyStreakTracker";
+import { TaskList } from "@/components/dashboard/TaskList";
 
-export default function DashboardPage() {
-  const { data: session } = useSession();
-  const [streak, setStreak] = useState(14);
-  const [tasks, setTasks] = useState([
-    { id: "1", text: "Revise React Hooks flashcards", done: false },
-    { id: "2", text: "Upload Database Normalization assignments", done: true },
-    { id: "3", text: "Conduct Frontend mock interview simulation", done: false },
-    { id: "4", text: "Submit final project portfolio ZIP for review", done: false },
+export default async function DashboardPage() {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    redirect("/login");
+  }
+
+  const userId = session.user.id;
+
+  // Fetch real database records count for dashboard stats
+  const [user, profile, studyNotesCount, interviewSessions] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { fullName: true, name: true, image: true },
+    }),
+    prisma.userProfile.findUnique({
+      where: { userId },
+    }),
+    prisma.studyNote.count({
+      where: { userId },
+    }),
+    prisma.interviewSession.findMany({
+      where: { userId },
+      select: { score: true },
+    }),
   ]);
 
-  const toggleTask = (id: string) => {
-    setTasks(tasks.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
-  };
+  if (!user) {
+    redirect("/login");
+  }
 
-  const incrementStreak = () => {
-    setStreak(streak + 1);
-  };
+  // Calculate dynamic stats
+  const displayName = user.fullName ?? user.name ?? "Student";
+  const firstName = displayName.split(/\s+/)[0];
 
+  // 1. Calculate Profile Completion Percentage
+  let completionPct = 0;
+  if (displayName) completionPct += 15;
+  if (user.image) completionPct += 15;
+  if (profile?.bio) completionPct += 15;
+  if (profile?.university) completionPct += 15;
+  if (profile?.skills && profile.skills.length > 0) completionPct += 15;
+  if (profile?.github || profile?.linkedin) completionPct += 15;
+  if (profile?.studyTarget) completionPct += 10;
+
+  // 2. Dynamic Readiness score (from mock interview database sessions)
+  const readinessScore =
+    interviewSessions.length > 0
+      ? Math.round(interviewSessions.reduce((acc, curr) => acc + curr.score, 0) / interviewSessions.length)
+      : 84; // default mock value
+
+  // 3. Weekly Hours Chart Mock data
   const chartData = [
     { day: "Mon", hours: 2.5 },
     { day: "Tue", hours: 3.1 },
@@ -34,44 +69,44 @@ export default function DashboardPage() {
     { day: "Sun", hours: 0.8 },
   ];
 
-  const displayName = session?.user?.name ? session.user.name.split(/\s+/)[0] : "Student";
-
   return (
     <div className="flex flex-col gap-6">
+      {/* Study streak logger client action */}
+      <StudyStreakTracker />
+
       {/* Welcome Banner */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex justify-between items-center -mt-6">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight">Welcome back, {displayName}!</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight">Welcome back, {firstName}!</h1>
           <p className="text-xs text-zinc-500">Here&apos;s your career preparation overview for today.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="glass" size="sm" onClick={incrementStreak} className="cursor-pointer">
-            🔥 Log Daily Study (+1 Streak)
-          </Button>
         </div>
       </div>
 
       {/* Stats Cards Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <Card className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Study Streak</span>
-          <span className="text-3xl font-black text-foreground">🔥 {streak} Days</span>
-          <span className="text-[10px] text-zinc-400">Keep it up! Active since Jun 24.</span>
+        <Card className="flex flex-col justify-between">
+          <StreakCard />
         </Card>
-        <Card className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Interview Readiness</span>
-          <span className="text-3xl font-black text-foreground">📈 84%</span>
-          <ProgressBar value={84} className="mt-1" color="primary" />
+        <Card className="flex flex-col gap-1.5 justify-between">
+          <div>
+            <span className="text-xs font-semibold text-zinc-550 uppercase tracking-wider">Interview Readiness</span>
+            <span className="text-3xl font-black text-foreground block">📈 {readinessScore}%</span>
+          </div>
+          <ProgressBar value={readinessScore} className="mt-1" color="primary" />
         </Card>
-        <Card className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Library Files</span>
-          <span className="text-3xl font-black text-foreground">📁 32 Files</span>
-          <span className="text-[10px] text-zinc-400">4 folders, 12 categories mapped.</span>
+        <Card className="flex flex-col gap-1.5 justify-between">
+          <div>
+            <span className="text-xs font-semibold text-zinc-550 uppercase tracking-wider">Library Files</span>
+            <span className="text-3xl font-black text-foreground block">📁 {studyNotesCount} Files</span>
+          </div>
+          <span className="text-[10px] text-zinc-400">Created by you. Mapped in Leitner boxes.</span>
         </Card>
-        <Card className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Study Hours</span>
-          <span className="text-3xl font-black text-foreground">⏰ 16.5 Hrs</span>
-          <span className="text-[10px] text-zinc-400">Average: 2.3 hours per day.</span>
+        <Card className="flex flex-col gap-1.5 justify-between">
+          <div>
+            <span className="text-xs font-semibold text-zinc-550 uppercase tracking-wider">Profile Completion</span>
+            <span className="text-3xl font-black text-foreground block">👤 {completionPct}%</span>
+          </div>
+          <ProgressBar value={completionPct} className="mt-1" color="success" />
         </Card>
       </div>
 
@@ -104,90 +139,17 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Task Checklist */}
-        <Card className="flex flex-col gap-4">
-          <CardHeader className="mb-2">
-            <CardTitle className="text-sm font-bold">Upcoming Tasks</CardTitle>
+        {/* Study Checklist Card */}
+        <Card className="flex flex-col">
+          <CardHeader className="mb-0">
+            <CardTitle className="text-sm font-bold">Today&apos;s Study List</CardTitle>
+            <p className="text-[10px] text-zinc-500">Check off items to log progress and increment stats.</p>
           </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            {tasks.map((task) => (
-              <div
-                key={task.id}
-                onClick={() => toggleTask(task.id)}
-                className="flex items-center gap-3 p-3 rounded-xl border border-card-border hover:bg-zinc-100 dark:hover:bg-zinc-800/40 transition-colors cursor-pointer"
-              >
-                <span className={`h-4.5 w-4.5 border rounded-md flex items-center justify-center flex-shrink-0 ${task.done ? "bg-brand-success border-brand-success text-white" : "border-card-border"}`}>
-                  {task.done && (
-                    <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
-                    </svg>
-                  )}
-                </span>
-                <span className={`text-xs ${task.done ? "line-through text-zinc-450" : "text-foreground"}`}>
-                  {task.text}
-                </span>
-              </div>
-            ))}
+          <CardContent className="flex-1 mt-2">
+            <TaskList />
           </CardContent>
         </Card>
       </div>
-
-      {/* Recent Activity Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-bold">Recent Uploads & Activity</CardTitle>
-        </CardHeader>
-        <CardContent className="overflow-x-auto mt-4">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-card-border text-[10px] font-bold text-zinc-400 uppercase">
-                <th className="pb-3">Name</th>
-                <th className="pb-3">Tags</th>
-                <th className="pb-3">Size</th>
-                <th className="pb-3">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-card-border text-xs">
-              <tr>
-                <td className="py-4 font-semibold">Prisma_Models_Documentation.pdf</td>
-                <td className="py-4">
-                  <span className="px-2 py-0.5 rounded-full bg-brand-primary/10 text-brand-primary text-[10px]">Database</span>
-                </td>
-                <td className="py-4 text-zinc-400">1.2 MB</td>
-                <td className="py-4">
-                  <span className="text-brand-success font-semibold flex items-center gap-1.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-brand-success" /> Completed
-                  </span>
-                </td>
-              </tr>
-              <tr>
-                <td className="py-4 font-semibold">React_Advanced_Hooks_Lecture.docx</td>
-                <td className="py-4">
-                  <span className="px-2 py-0.5 rounded-full bg-brand-secondary/10 text-brand-secondary text-[10px]">Frontend</span>
-                </td>
-                <td className="py-4 text-zinc-400">324 KB</td>
-                <td className="py-4">
-                  <span className="text-brand-success font-semibold flex items-center gap-1.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-brand-success" /> Completed
-                  </span>
-                </td>
-              </tr>
-              <tr>
-                <td className="py-4 font-semibold">Technical_Resume_JohnDoe.pdf</td>
-                <td className="py-4">
-                  <span className="px-2 py-0.5 rounded-full bg-brand-accent/10 text-brand-accent text-[10px]">Career</span>
-                </td>
-                <td className="py-4 text-zinc-400">842 KB</td>
-                <td className="py-4">
-                  <span className="text-brand-success font-semibold flex items-center gap-1.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-brand-success" /> Completed
-                  </span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </CardContent>
-      </Card>
     </div>
   );
 }

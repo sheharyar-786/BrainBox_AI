@@ -69,6 +69,17 @@ model UserProfile {
   linkedin   String?
   bio        String?
 
+  // Optional Onboarding & Personalization
+  major           String?
+  graduationYear  Int?     @map("graduation_year")
+  country         String?
+  city            String?
+  careerInterests String[] @map("career_interests")
+  languages       String[]
+  learningGoals   String[] @map("learning_goals")
+  studyTarget     Int      @default(30) @map("study_target")
+  careerPath      String?  @map("career_path")
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_profiles")

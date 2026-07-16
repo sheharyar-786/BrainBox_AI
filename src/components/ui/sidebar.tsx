@@ -93,15 +93,18 @@ export function Sidebar({ user }: SidebarProps) {
       </nav>
 
       {/* User Section */}
-      <div className="p-4 border-t border-card-border flex items-center gap-3">
+      <Link
+        href="/profile"
+        className="p-4 border-t border-card-border flex items-center gap-3 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/30 transition-colors cursor-pointer group"
+      >
         <Avatar name={displayName} src={user.image ?? undefined} size="sm" />
         {!isCollapsed && (
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-foreground truncate">{displayName}</p>
+            <p className="text-xs font-bold text-foreground truncate group-hover:text-brand-primary transition-colors">{displayName}</p>
             <p className="text-[10px] text-zinc-500 truncate">{user.email}</p>
           </div>
         )}
-      </div>
+      </Link>
     </aside>
   );
 }

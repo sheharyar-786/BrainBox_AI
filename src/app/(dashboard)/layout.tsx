@@ -21,11 +21,19 @@ export default async function DashboardLayout({ children }: { children: React.Re
       email: true,
       image: true,
       role: true,
+      profile: {
+        select: { id: true },
+      },
     },
   });
 
   if (!user) {
     redirect("/login");
+  }
+
+  // Redirect to onboarding if profile is missing
+  if (!user.profile) {
+    redirect("/onboarding");
   }
 
   return (

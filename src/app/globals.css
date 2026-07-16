@@ -25,6 +25,13 @@
 
   /* Custom Transitions & Blur */
   --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+
+  /* Custom Design System Zinc Steps */
+  --color-zinc-350: #bcbcbf;
+  --color-zinc-355: #b5b5b9;
+  --color-zinc-550: #616168;
+  --color-zinc-650: #48484e;
+  --color-zinc-750: #333338;
 }
 
 :root {

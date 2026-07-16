@@ -43,7 +43,7 @@ export function Avatar({ src, name, size = "md", isOnline, className }: AvatarPr
       ) : (
         <div
           className={cn(
-            "rounded-full border border-card-border flex items-center justify-center font-bold bg-gradient-to-br from-brand-primary/10 to-brand-secondary/20 text-brand-primary dark:text-purple-300",
+            "rounded-full border border-card-border flex items-center justify-center font-bold bg-gradient-to-br from-brand-primary/10 to-brand-secondary/20 text-brand-primary dark:text-purple-300 whitespace-nowrap select-none leading-none tracking-tighter",
             sizes[size]
           )}
         >
