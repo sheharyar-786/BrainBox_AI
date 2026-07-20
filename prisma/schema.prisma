@@ -34,6 +34,8 @@ model User {
   roadmaps          Roadmap[]
   subscriptions     Subscription[]
   notifications     Notification[]
+  conversations     Conversation[]
+  studyMaterials    StudyMaterial[]
 
   @@map("users")
 }
@@ -105,6 +107,8 @@ model InterviewSession {
   score      Int
   feedback   String   @db.Text
   transcript String   @db.Text
+  role       String   @default("General")
+  difficulty String   @default("Medium")
   createdAt  DateTime @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -113,12 +117,16 @@ model InterviewSession {
 }
 
 model Resume {
-  id           String   @id @default(uuid())
-  userId       String   @map("user_id")
-  originalFile String   @map("original_file")
-  parsedText   String   @map("parsed_text") @db.Text
-  atsScore     Int      @map("ats_score")
-  createdAt    DateTime @default(now()) @map("created_at")
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  originalFile    String   @map("original_file")
+  parsedText      String   @map("parsed_text") @db.Text
+  atsScore        Int      @map("ats_score")
+  strengths       String[] @default([])
+  weaknesses      String[] @default([])
+  missingKeywords String[] @map("missing_keywords") @default([])
+  recommendations String[] @default([])
+  createdAt       DateTime @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -199,4 +207,44 @@ model PasswordResetToken {
 
   @@unique([email, token])
   @@map("password_reset_tokens")
+}
+
+model Conversation {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  title     String
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@map("conversations")
+}
+
+model Message {
+  id             String   @id @default(uuid())
+  conversationId String   @map("conversation_id")
+  role           String   // "user" or "assistant"
+  content        String   @db.Text
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+model StudyMaterial {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  topic      String
+  summary    String   @db.Text
+  notes      String   @db.Text
+  flashcards Json     // Array of { front: string, back: string }
+  quiz       Json     // Array of { question: string, options: string[], answer: string }
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("study_materials")
 }
