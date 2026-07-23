@@ -7,6 +7,12 @@ export async function parseFileText(buffer: Buffer, filename: string): Promise<s
 
   if (extension === "pdf") {
     try {
+      // Polyfill DOMMatrix for Node.js environment to prevent pdfjs-dist crashes
+      if (typeof global.DOMMatrix === "undefined") {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (global as any).DOMMatrix = class DOMMatrix {};
+      }
+
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const pdfParse = require("pdf-parse");
       const data = await pdfParse(buffer) as { text?: string };
