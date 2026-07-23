@@ -304,7 +304,7 @@ export default function TutorPage() {
                 <span className="font-bold text-[9px] opacity-60 mb-0.5 uppercase tracking-wide">
                   {msg.role === "assistant" ? "AI Mentor" : "You"}
                 </span>
-                <p className="whitespace-pre-line">{renderContent(msg.content)}</p>
+                <div className="whitespace-pre-line">{renderContent(msg.content)}</div>
               </div>
             ))}
             {isLoading && (
