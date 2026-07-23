@@ -15,7 +15,7 @@ interface GeminiPayload {
 
 export class GeminiProvider implements AIProvider {
   private apiKey: string;
-  private modelName = "gemini-1.5-flash";
+  private modelName = "gemini-flash-latest";
 
   constructor() {
     this.apiKey = process.env.GEMINI_API_KEY || "";
