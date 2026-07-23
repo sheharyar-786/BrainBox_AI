@@ -14,8 +14,10 @@ export async function parseFileText(buffer: Buffer, filename: string): Promise<s
       }
 
       // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const pdfParse = require("pdf-parse");
-      const data = await pdfParse(buffer) as { text?: string };
+      const { PDFParse } = require("pdf-parse");
+      const parser = new PDFParse({ data: buffer });
+      const data = await parser.getText() as { text?: string };
+      await parser.destroy();
       return data.text || "";
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error);
