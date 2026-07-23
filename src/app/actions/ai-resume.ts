@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { parseFileText } from "@/lib/parser";
 import { getAIProvider } from "@/lib/ai/provider";
+import { cleanStringForDb, cleanDataForDb } from "@/lib/db-cleaner";
 
 // Helper to authenticate user
 async function getAuthUserId() {
@@ -93,13 +94,13 @@ ${extractedText.substring(0, 8000)}
     const resume = await prisma.resume.create({
       data: {
         userId,
-        originalFile: file.name,
-        parsedText: extractedText,
+        originalFile: cleanStringForDb(file.name),
+        parsedText: cleanStringForDb(extractedText),
         atsScore,
-        strengths,
-        weaknesses,
-        missingKeywords,
-        recommendations
+        strengths: cleanDataForDb(strengths),
+        weaknesses: cleanDataForDb(weaknesses),
+        missingKeywords: cleanDataForDb(missingKeywords),
+        recommendations: cleanDataForDb(recommendations)
       }
     });
 

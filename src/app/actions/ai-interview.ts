@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { interviewConfigSchema } from "@/lib/validation/ai";
 import { getAIProvider } from "@/lib/ai/provider";
+import { cleanStringForDb } from "@/lib/db-cleaner";
 
 // Helper to authenticate user
 async function getAuthUserId() {
@@ -127,9 +128,9 @@ ${transcriptText}
       data: {
         userId,
         score,
-        feedback,
-        transcript: transcriptText,
-        role,
+        feedback: cleanStringForDb(feedback),
+        transcript: cleanStringForDb(transcriptText),
+        role: cleanStringForDb(role),
         difficulty
       }
     });

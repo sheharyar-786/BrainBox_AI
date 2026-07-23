@@ -6,6 +6,7 @@ import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { roadmapConfigSchema } from "@/lib/validation/ai";
 import { getAIProvider } from "@/lib/ai/provider";
+import { cleanStringForDb, cleanDataForDb } from "@/lib/db-cleaner";
 
 // Helper to authenticate user
 async function getAuthUserId() {
@@ -72,8 +73,8 @@ Do not include any wrapping markdown formatting, extra comments, or code-block t
     const roadmap = await prisma.roadmap.create({
       data: {
         userId,
-        title,
-        jsonData: milestones as unknown as Prisma.InputJsonValue
+        title: cleanStringForDb(title),
+        jsonData: cleanDataForDb(milestones) as unknown as Prisma.InputJsonValue
       }
     });
 
@@ -130,7 +131,7 @@ export async function updateRoadmapMilestoneAction(roadmapId: string, milestoneI
     // Update in database
     const updatedRoadmap = await prisma.roadmap.update({
       where: { id: roadmapId },
-      data: { jsonData: updatedMilestones as unknown as Prisma.InputJsonValue }
+      data: { jsonData: cleanDataForDb(updatedMilestones) as unknown as Prisma.InputJsonValue }
     });
 
     revalidatePath("/roadmap");

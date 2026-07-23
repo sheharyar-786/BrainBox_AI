@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { chatInputSchema } from "@/lib/validation/ai";
 import { getAIProvider } from "@/lib/ai/provider";
+import { cleanStringForDb } from "@/lib/db-cleaner";
 
 // Helper to authenticate user
 async function getAuthUserId() {
@@ -101,7 +102,7 @@ export async function sendMessageAction(messageText: string, conversationId?: st
       const conversation = await prisma.conversation.create({
         data: {
           userId,
-          title
+          title: cleanStringForDb(title)
         }
       });
       activeConversationId = conversation.id;
@@ -120,7 +121,7 @@ export async function sendMessageAction(messageText: string, conversationId?: st
       data: {
         conversationId: activeConversationId,
         role: "user",
-        content: messageText
+        content: cleanStringForDb(messageText)
       }
     });
 
@@ -154,7 +155,7 @@ export async function sendMessageAction(messageText: string, conversationId?: st
       data: {
         conversationId: activeConversationId,
         role: "assistant",
-        content: replyText
+        content: cleanStringForDb(replyText)
       }
     });
 

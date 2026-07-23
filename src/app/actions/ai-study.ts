@@ -6,6 +6,7 @@ import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { studyMaterialSchema } from "@/lib/validation/ai";
 import { getAIProvider } from "@/lib/ai/provider";
+import { cleanStringForDb, cleanDataForDb } from "@/lib/db-cleaner";
 
 // Helper to authenticate user
 async function getAuthUserId() {
@@ -96,11 +97,11 @@ Do not include any wrapping markdown formatting, extra comments, or code-block t
     const studyMaterial = await prisma.studyMaterial.create({
       data: {
         userId,
-        topic,
-        summary: material.summary || "Summary generated.",
-        notes: material.notes || "Detailed notes generated.",
-        flashcards: (material.flashcards || []) as unknown as Prisma.InputJsonValue,
-        quiz: (material.quiz || []) as unknown as Prisma.InputJsonValue
+        topic: cleanStringForDb(topic),
+        summary: cleanStringForDb(material.summary || "Summary generated."),
+        notes: cleanStringForDb(material.notes || "Detailed notes generated."),
+        flashcards: cleanDataForDb(material.flashcards || []) as unknown as Prisma.InputJsonValue,
+        quiz: cleanDataForDb(material.quiz || []) as unknown as Prisma.InputJsonValue
       }
     });
 
